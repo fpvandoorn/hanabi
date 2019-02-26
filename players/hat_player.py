@@ -129,7 +129,7 @@ class HatPlayer(AIPlayer):
             assert i == r.whoseTurn
             # If it's my turn, I now know what my action is
             if i == me:
-                print("player",me,"sees that the clue of player",self.given_clues[0]['cluer'],"was value",self.given_clues[0]['value'],
+                print("player",me,"sees that the clue of player",cluer,"was value",self.given_clues[0]['value'],
                 "and other players have done",value,"so I will do",self.number_to_action((self.given_clues[0]['value'] - value) % 9))
                 self.given_clues[0]['value'] = (self.given_clues[0]['value'] - value) % 9
                 return
@@ -145,6 +145,8 @@ class HatPlayer(AIPlayer):
             assert i == self.modified_player
             if cluer == me: return value
             if self.is_between(self.modified_player, cluer, me):
+                print("player",me,"sees that the clue of player",cluer,"was value",self.given_clues[0]['value'],
+                "and other players have done",value,"so remaining is",self.number_to_action((self.given_clues[0]['value'] - value) % 9))
                 self.given_clues[0]['value'] = (self.given_clues[0]['value'] - value) % 9
                 return
             modified_value = (self.given_clues[0]['value'] - value) % 9
@@ -702,6 +704,7 @@ class HatPlayer(AIPlayer):
         #self.count_hints(r)
 
         x = self.standard_action(me, self.modified_player, self.will_be_played, self.futureprogress, self.card_to_player, self.player_to_card, r)
+        print("modified action for player",self.modified_player,"is",x)
         # todo: do stuff to find best modified_action
 #        x = self.modified_action(me, self.modified_player, self.will_be_played, self.futureprogress, self.card_to_player, self.player_to_card, r)
         self.actions_before_modified.append(x)
