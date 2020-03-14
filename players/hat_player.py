@@ -4,10 +4,10 @@ A strategy for 4 or 5 players which uses "hat guessing" to convey information
 to all other players with a single clue. See doc_hat_player.md for a detailed
 description of the strategy. The following table gives the approximate
 percentages of this strategy reaching maximum score (over 10000 games).
-Players | % (no variant) | % (purple) | % (rainbow)
---------+----------------+------------+-------------
-   4    |      94.2      |    94.4    |    94.2
-   5    |      91.2      |    95.7    |    95.7
+Players | % (no variant) | % (6 suits) | % (rainbow) | % (black) |
+--------+----------------+-------------+-------------+-----------|
+   4    |      94.2      |     94.4    |    94.2     |   59.6    |
+   5    |      91.2      |     95.7    |    95.7     |   56.5    |
 """
 
 from hanabi_classes import *
@@ -18,7 +18,7 @@ from copy import copy
 # If true, the cluer can tell the player to discard, including cards which might be useful later
 # If false, the clued player can clue instead of discarding
 MODIFIEDACTION = True
-DEBUG = True
+DEBUG = False
 DEBUGVALUES = ['play 5 instead', 'someone cannot clue, but I have a play', 'unsafe discard at 0 clues', 'safe discard at 0 clues', \
     'clue blocked', 'I misplayed', 'BUG: instructed to discard at 8 clues', 'BUG: instructed to clue with 0 clues', 'instructing to discard critical card',
     'player did wrong action at >0 clues', 'player did not play', 'player played wrong card', 'wrong action: discard at 0 clues', 'someone performed the wrong action',
@@ -883,10 +883,10 @@ class HatPlayer(AIPlayer):
         if myaction[0] == 'discard' and r.hints == 8:
             print("Cheating! Discarding with 8 available hints")
         if myaction[0] == 'discard' and 0 < len(r.deck) < \
-            count_unplayed_playable_cards(r, r.progress) and r.verbose:
+            count_unplayed_playable_cards(r, r.progress) and r.verbose and DEBUG:
             print("Discarding in endgame with", r.hints, "clue" + ("s" if r.hints != 1 else "") + ".")
         if myaction[0] == 'play' and r.hints == 8 and \
-            cards[myaction[1]]['name'][0] == '5' and r.log:
+            cards[myaction[1]]['name'][0] == '5' and r.log and DEBUG:
             print("Wasting a clue")
         if myaction[0] != 'play': self.next_player_actions = []
         # I'm not clued anymore if I don't play

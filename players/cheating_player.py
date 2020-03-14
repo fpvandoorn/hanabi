@@ -3,12 +3,12 @@
 Tries to make intelligent moves when looking at his own cards.  The following
 table gives the approximate percentages of this strategy reaching maximum score.
 
-Players | % (5 suits) | % (6 suits)
---------+-------------+-------------
-   2    |    94.9     |     90.6
-   3    |    98.5     |     98.5
-   4    |    98.2     |     98.2
-   5    |    97.0     |     97.8
+Players | % (5 suits) | % (6 suits) | % (black) |
+--------+-------------+-------------+-----------|
+   2    |    94.9     |     90.6    |    67.3   |
+   3    |    98.5     |     98.5    |    79.8   |
+   4    |    98.2     |     98.2    |    76.8   |
+   5    |    97.0     |     97.8    |    72.6   |
 
 Possible improvements (probably this doesn't actually increase the win percentage):
 - When playing a card, prefer one that allows other players to follow up in the
@@ -16,6 +16,8 @@ Possible improvements (probably this doesn't actually increase the win percentag
 - When discarding a card you see in someone else's hand: don't do this if the
   other player has a lot of playable cards
 - When discarding the first copy of a card, prefer suits with low progress
+- If I can play, but someone else has the same card, and they don't have a critical 4
+  (or 5 above it), let them play it
 """
 
 from hanabi_classes import *
@@ -42,25 +44,32 @@ class CheatingPlayer(AIPlayer):
         badness = 1: discard useless card
         badness = 3-6: discard card which is already in some else's hand
         (depends on the number of players)
-        badness between 10 and 30: discard the first copy of a non-5 card
-        (4s are badness 10, 3s badness 20, 2s badness 30)
-        badness >= 100: discard a necessary card"""
+        badness between 20 and 40: discard the first copy of a non-5 card
+        (4s are badness 20, 3s badness 30, 2s badness 40)
+        badness >= 100: discard a necessary card
+        Add 6 badness if I have a critical 4 or a 5 above a critical 4 in 2 player games."""
+
+        base_badness = 0
+        # With 2 players we can fine-tune the discards a bit more: if I have a critical 4 or a 5 above a critical 4, I prefer not to discard.
+        if r.nPlayers == 2:
+            critical_fours = [suit for suit in r.suits if is_critical('4' + suit, r)]
+            if critical_fours and [card for card in cards if card['name'][1] in critical_fours and 4 <= int(card['name'][0]) <= 5]:
+                base_badness = 6
+
         discardCards = get_played_cards(cards, progress)
         if discardCards: # discard a card which is already played
-            return 1, discardCards[0]
+            return 1 + base_badness, discardCards[0]
         discardCards = get_duplicate_cards(cards)
         if discardCards: # discard a card which occurs twice in your hand
-            return 1, discardCards[0]
-        discardCards = get_visible_cards(cards, get_all_visible_cards(player,r))
+            return 1 + base_badness, discardCards[0]
+        discardCards = get_visible_cards(cards, get_all_visible_cards(player, r))
         if discardCards: # discard a card which you can see (lowest first).
                          # Empirically this is slightly worse with fewer players
-            return 8 - r.nPlayers, find_lowest(discardCards)
-        # note: we never reach this part of the code if there is a 1 in the hand of player
-        discardCards = get_nonvisible_cards(cards, r.discardpile)
-        discardCards = [card for card in discardCards if card['name'][0] != '5']
+            return 8 - r.nPlayers + base_badness, find_lowest(discardCards)
+        discardCards = [card for card in cards if not is_critical(card['name'], r)]
         if discardCards: # discard a card which is not unsafe to discard
             card = find_highest(discardCards)
-            return 50 - 10 * int(card['name'][0]), card
+            return 60 - 10 * int(card['name'][0]) + base_badness, card
         cards_copy = list(cards)
         card = find_highest(cards_copy)
         return 600 - 100 * int(card['name'][0]), card
@@ -128,7 +137,7 @@ class CheatingPlayer(AIPlayer):
                     # r.debug['stop'] = 0
                     suit = suits[0]
                     players_with_5 = [i for i in range(r.nPlayers) if '5' + suit in names(r.h[i].cards)]
-                    players_with_4 = [i for i in range(r.nPlayers) if '4' + suit  in names(r.h[i].cards)]
+                    players_with_4 = [i for i in range(r.nPlayers) if '4' + suit in names(r.h[i].cards)]
                     # if the 5 is not yet drawn, then anybody can discard, as long as they are not the only one with the 4.
                     # But this will go correctly because of the remaining logic in this file
                     if players_with_5:
@@ -145,7 +154,6 @@ class CheatingPlayer(AIPlayer):
             not_waiting_for_low_card and not all_useful_cards_are_drawn(r):
                 return self.give_a_hint(me, r)
 
-
         # Discard if you can safely discard or if you have no hints.
         badness, discard = self.want_to_discard(cards, me, r, progress)
         if r.hints + badness < 10 or r.hints == 0:
@@ -156,8 +164,7 @@ class CheatingPlayer(AIPlayer):
                 other_badness.append(0)
             else:
                 other_badness.append(self.want_to_discard(r.h[i].cards, i, r, progress)[0])
-        other_badness = other_badness
-        #
+
         # If someone can play or discard more safely before you run out of
         # hints, give a hint.
         #

@@ -5,12 +5,15 @@ All contributors welcome.  Please maintain compatibility with both Python 2 and
 Python 3.
 
 ## Usage
-    usage: ./hanabi_wrapper.py p1 p2 [p3 ...] [-t game_type] [-n n_rounds] [-v verbosity] [-l loss_score]
+    usage: ./hanabi_wrapper.py p1 p2 [p3 ...] [options]
       pi (AI for player i): idiot, cheater, basic, brainbow, newest, encoder, gencoder, hat, or human
-      game_type: rainbow [default], purple, or vanilla
-      n_rounds: positive int [default: 1]
-      verbosity: verbose [default], scores, silent, or log
-      loss_score (points to award after 3 guesses): zero [default] or full
+      -t game_type: rainbow [default], purple (6 suits), vanilla (5 suits), or black (6 suits; one suit has only 1 copy of each rank)
+      -n n_rounds: positive int [default: 1]
+      -v verbosity: verbose [default], scores, silent, or log
+      -l loss_score (points to award after 3 guesses): zero [default] or full
+      -s seed: if given, use this number as the seed for the RNG
+      -p: if given, try to check whether a bot cheats, and gives an error if it does.
+      -o output: if given, output a JSON file of the game in log.json
 
 There is no max number of players.  With >5, hand size is still 4 cards.
 
@@ -44,22 +47,43 @@ or
     PERFECT GAMES: 88.6%
 
 ## Available players
-* **Cheating Idiot** (`idiot`) by RK<br>
+* **Cheating Idiot** ([`idiot`](players/cheating_idiot_player.py)) by RK<br>
   Peeks at own hand to know when to play, discards randomly, never hints
-* **Cheater** (`cheater`) by Floris van Doorn<br>
+* **Cheater** ([`cheater`](players/cheating_player.py)) by Floris van Doorn<br>
   Peeks at own hand to play, discard, and hint; high win rate
-* **Most Basic** (`basic`) by Ben Zax<br>
+* **Most Basic** ([`basic`](players/most_basic_player.py)) by Ben Zax<br>
   Plays when certain, discards randomly, hints inefficiently, no rainbows
-* **Basic Rainbow** (`brainbow`) by Greg Hutchings<br>
+* **Basic Rainbow** ([`brainbow`](players/basic_rainbow_player.py)) by Greg Hutchings<br>
   Like `basic` but checks direct and indirect info to handle rainbows
-* **Newest Card** (`newest`) by BZ<br>
+* **Newest Card** ([`newest`](players/newest_card_player.py)) by BZ<br>
   Plays newest hinted card (and hints accordingly), discards oldest card
-* **Encoding** (`encoder`) & **General Encoding** (`gencoder`) by Taylor Robie<br>
+* **Encoding** ([`encoder`](players/encoding_player.py)) & **General Encoding** ([`gencoder`](players/general_encoding_player.py)) by Taylor Robie<br>
   Experimental, hints counter-intuitively, Python 2 only (todo: 3!)
-* **Hat Player** (`hat`) by FvD<br>
-  Uses "hat guessing" techniques to convey information to all other players with a single hint. Needs at least 4 players. Has about 80% win rate.
-* **Human** (`human`) by GH<br>
+* **Hat Player** ([`hat`](players/hat_player.py)) by FvD<br>
+  Uses "hat guessing" techniques to convey information to all other players with a single hint. Needs at least 4 players. Has about 94% win rate. See [documentation](doc_hat_player.md).
+* **Human** ([`human`](players/human_player.py)) by GH<br>
   Allows you to play alongside the AIs (works best on `-v silent` or `log`)
+
+## Optimized Winrates
+
+There are two optimized players, with high winrates.
+
+The [hat player](players/hat_player.py) gets the following winrates on the different variants (it cannot play with 2 or 3 players):
+
+Players | % (no variant) | % (6 suits) | % (rainbow) | % (black) |
+--------|----------------|-------------|-------------|-----------|
+   4    |      94.2      |     94.4    |    94.2     |   59.6    |
+   5    |      91.2      |     95.7    |    95.7     |   56.5    |
+
+The [cheating player](players/cheating_player.py) gets the following winrates on the different variants.
+The cheating player can look at their own hand and play cards without needing clues. It does not look in the deck.
+
+Players | % (5 suits) | % (6 suits) | % (black) |
+--------|-------------|-------------|-----------|
+   2    |    94.9     |     90.6    |    67.3   |
+   3    |    98.5     |     98.5    |    79.8   |
+   4    |    98.2     |     98.2    |    76.8   |
+   5    |    97.0     |     97.8    |    72.6   |
 
 ## How to write your own AI player
 Use an existing player as a guide.  `CheatingIdiot` is especially simple.

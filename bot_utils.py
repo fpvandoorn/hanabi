@@ -201,15 +201,18 @@ def inverse_card_set(cardset, r):
     return inverse_set
 
 def is_critical(cardname, r):
-    """Tests whether card is not played and there is no other non-discarded card with the same name
-    Does not check whether all copies of a lower rank are already discarded"""
+    """Tests whether card is not played and there is no other non-discarded card with the same name.
+    Also returns true for all unplayed black cards.
+    Does not check whether all copies of a lower rank are already discarded."""
     return is_critical_aux(cardname, r.progress, r.discardpile)
 
 def is_critical_aux(cardname, progress, discardpile):
-    """Same as is_critical, but takes the progress and discardpile as arguments. Useful if you want to check
-    whether something was critical at another time"""
+    """Same as is_critical, but takes the progress and discardpile as arguments.
+    Useful if you want to check whether something was critical at another time."""
     if progress[cardname[1]] >= int(cardname[0]):
         return False
+    if cardname[1] == BLACK_SUIT:
+        return True
     return discardpile.count(cardname) + 1 == SUIT_CONTENTS.count(cardname[0])
 
 

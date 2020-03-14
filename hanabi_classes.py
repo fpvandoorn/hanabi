@@ -14,10 +14,12 @@ import random, logging, sys
 
 VANILLA_SUITS = 'rygbw'
 SUIT_CONTENTS = '1112233445' # must be ascending
+BLACK_SUIT_CONTENTS = '12345' # must be ascending
 N_HINTS       = 8
 N_LIGHTNING   = 3
 RAINBOW_SUIT  = '?'
 PURPLE_SUIT   = 'p'
+BLACK_SUIT    = 'k' # we use k for the black suit since b is already used for blue
 
 class AIPlayer(object):
     """AIPlayer class that should be inherited from when making"""
@@ -77,6 +79,8 @@ class Round(object):
             self.suits += RAINBOW_SUIT
         elif gameType == 'purple':
             self.suits += PURPLE_SUIT
+        elif gameType == 'black':
+            self.suits += BLACK_SUIT
 
         self.nPlayers = len(names)
         self.h = [self.Hand(i, names[i]) for i in range(self.nPlayers)]
@@ -121,8 +125,12 @@ class Round(object):
         """Construct a deck, shuffle, and deal."""
         deck = []
         for suit in self.suits:
-            for number in SUIT_CONTENTS:
-                deck.append(number + suit)
+            if suit == BLACK_SUIT:
+                for number in BLACK_SUIT_CONTENTS:
+                    deck.append(number + suit)
+            else:
+                for number in SUIT_CONTENTS:
+                    deck.append(number + suit)
 
         self.cardsLeft = deck[:] # Start tracking unplayed cards.
 

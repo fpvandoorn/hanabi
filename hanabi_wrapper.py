@@ -15,7 +15,7 @@ Command-line arguments (see usage):
 import sys, argparse, logging, random, os
 from time import gmtime, strftime
 from math import sqrt
-from play_hanabi import play_one_round, player_end_game_logging
+from play_hanabi import play_one_round, player_end_game_logging, total_cards
 from hanabi_classes import SUIT_CONTENTS, AIPlayer
 from players import *
 
@@ -24,12 +24,12 @@ for playerSubClass in AIPlayer.__subclasses__():
   availablePlayers[playerSubClass.get_name()] = playerSubClass
 
 # Parse command-line args.
-parser = argparse.ArgumentParser(description='Process some integers.')
+parser = argparse.ArgumentParser(description='Parse the players that play.')
 parser.add_argument('requiredPlayers', metavar='p', type=str, nargs=2,
   help=', '.join(availablePlayers.keys()))
 parser.add_argument('morePlayers', metavar='p', type=str, nargs='*')
 parser.add_argument('-t', '--game_type', default='rainbow',
-  metavar='game_type', type=str, help='rainbow, purple, or vanilla')
+  metavar='game_type', type=str, help='rainbow, purple, black, or vanilla')
 parser.add_argument('-n', '--n_rounds', default=1, metavar='n_rounds',
   type=int, help='positive int')
 parser.add_argument('-v', '--verbosity', default='verbose',
@@ -47,7 +47,7 @@ parser.set_defaults(output=False)
 
 args = parser.parse_args()
 
-assert args.game_type in ('rainbow', 'purple', 'vanilla')
+assert args.game_type in ('rainbow', 'purple', 'vanilla', 'black')
 assert args.n_rounds > 0
 assert args.verbosity in ('silent', 'scores', 'verbose', 'log')
 assert args.loss_score in ('zero', 'full')
@@ -117,9 +117,10 @@ debug = {} # a dictionary players can write into which will be printed in the en
 
 if args.output and os.path.exists('log.json'):
   os.remove('log.json')
-  for i in range(len(players)):
-    for c in range(10 * (5 if args.game_type == 'vanilla' else 6)):
-        debug[('note', i, c)] = ''
+
+for i in range(len(players)):
+  for c in range(total_cards(args.game_type)):
+      debug[('note', i, c)] = ''
 
 # Play rounds.
 scores = []

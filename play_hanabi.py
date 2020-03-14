@@ -26,6 +26,10 @@ def to_json (r, action):
         dic = {"type":actionType, "target":target}
     return dic
 
+def total_cards(gameType):
+    """Number of cards in the deck."""
+    return 55 if gameType == 'black' else 10 * (5 if gameType == 'vanilla' else 6)
+
 def play_one_round(gameType, players, names, verbosity, lossScore, isPoliced, writeOutput, debug):
     """Play a full round and return the score (int)."""
 
@@ -54,17 +58,18 @@ def play_one_round(gameType, players, names, verbosity, lossScore, isPoliced, wr
         handSize = 4
         if r.nPlayers < 4: handSize += 1
         startDeck = list(map(lambda card: {"rank": int(card[0]), "suit": r.suits.index(card[1])}, r.startingDeck))
-        notes = [[debug[('note', i, c)] for c in range(10 * (5 if gameType == 'vanilla' else 6))] for i in range(r.nPlayers)]
+        notes = [[debug[('note', i, c)] for c in range(total_cards(gameType))] for i in range(r.nPlayers)]
         players = names
         if gameType == 'rainbow': variant = "Rainbow (6 Suits)"
         if gameType == 'purple': variant = "Six Suits"
         if gameType == 'vanilla': variant = "No Variant"
+        if gameType == 'black': variant = "Six Suits (One of Each Rank)"
         output = { "actions": actions, "deck": startDeck, "notes": notes, "players": players, "variant": variant }
         with io.open('log.json', 'a', encoding='utf-8') as f:
             f.write(json.dumps(output, ensure_ascii=False))
             f.write('\n\n')
         for i in range(len(players)):
-            for c in range(10 * (5 if gameType == 'vanilla' else 6)):
+            for c in range(total_cards(gameType)):
                 debug[('note', i, c)] = ''
 
 
