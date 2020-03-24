@@ -2,10 +2,10 @@ This is a description of the stategy implemented in hat_player.py. The strategy 
 5 players. The win percentages of the strategy (achieving maximal score) are approximately as
 follows:
 
-|Players | % (5 suits) | % (6 suits) |
-|:------:|:-----------:|:-----------:|
-|   4    |    94.2     |    94.4     |
-|   5    |    91.2     |    95.7     |
+Players | % (no variant) | % (6 suits) | % (rainbow) | % (black) |
+--------|----------------|-------------|-------------|-----------|
+   4    |      94.2      |     94.4    |    94.2     |   59.6    |
+   5    |      91.2      |     95.7    |    95.7     |   56.5    |
 
 This document describes the strategy which the bots had until March 2019. In March 2019 major
 improvements have been made, before this, the winrates were approx. 10pp lower. Some brief remarks
