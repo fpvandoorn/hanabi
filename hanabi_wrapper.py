@@ -149,7 +149,7 @@ if len(scores) > 1: # Only print stats if there were multiple rounds.
     # the sample standard deviation for the amount of perfect scores
     std_perfect_games = sqrt(count_max * (args.n_rounds - count_max) / \
                              float (args.n_rounds - 1)) / args.n_rounds
-    logger.info('AVERAGE SCORE: {:.2f} +/- {:.3f} (1 std. err.)'\
+    logger.info('AVERAGE SCORE: {:.3f} +/- {:.4f} (1 std. err.)'\
                 .format(mean(scores), std_err(scores)))
     logger.info('PERFECT GAMES: {:.2f}% +/- {:.2f}pp (1 std. err.)'
                 .format(100*perfect_games, 100*std_perfect_games))

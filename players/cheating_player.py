@@ -1,14 +1,23 @@
 """A smart cheating Hanabi player.
 
 Tries to make intelligent moves when looking at his own cards.  The following
-table gives the approximate percentages of this strategy reaching maximum score.
+table gives the approximate percentages of this strategy reaching maximum score
+(over 10000 games, at seed 0).
 
-Players | % (5 suits) | % (6 suits) | % (black) |
---------+-------------+-------------+-----------|
-   2    |    94.9     |     90.6    |    67.3   |
-   3    |    98.5     |     98.5    |    79.8   |
-   4    |    98.2     |     98.2    |    76.8   |
-   5    |    97.0     |     97.8    |    72.6   |
+Players | 5 suits | 6 suits | black |
+--------|---------|---------|-------|
+   2    |   94.8  |   90.2  | 67.3  |
+   3    |   98.4  |   98.4  | 79.8  |
+   4    |   98.1  |   98.3  | 76.7  |
+   5    |   96.8  |   97.7  | 72.6  |
+
+Average number of points lost (either 25 or 30 minus average score attained):
+Players | 5 suits | 6 suits | black |
+--------|---------|---------|-------|
+   2    |  0.071  |  0.162  | 0.744 |
+   3    |  0.020  |  0.021  | 0.408 |
+   4    |  0.024  |  0.023  | 0.474 |
+   5    |  0.039  |  0.028  | 0.520 |
 
 Possible improvements (probably this doesn't actually increase the win percentage):
 - When playing a card, prefer one that allows other players to follow up in the

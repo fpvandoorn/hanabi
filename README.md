@@ -70,20 +70,22 @@ There are two optimized players, with high winrates.
 
 The [hat player](players/hat_player.py) gets the following winrates on the different variants (it cannot play with 2 or 3 players):
 
-Players | % (no variant) | % (6 suits) | % (rainbow) | % (black) |
---------|----------------|-------------|-------------|-----------|
-   4    |      94.2      |     94.4    |    94.2     |   59.6    |
-   5    |      91.2      |     95.7    |    95.7     |   56.5    |
+Players | vanilla | 6 suits | rainbow | black |
+--------|---------|---------|---------|-------|
+   4    |   94.1  |   93.9  |  93.7   | 59.6  |
+   5    |   90.8  |   95.1  |  95.1   | 56.5  |
 
 The [cheating player](players/cheating_player.py) gets the following winrates on the different variants.
 The cheating player can look at their own hand and play cards without needing clues. It does not look in the deck.
 
-Players | % (5 suits) | % (6 suits) | % (black) |
---------|-------------|-------------|-----------|
-   2    |    94.9     |     90.6    |    67.3   |
-   3    |    98.5     |     98.5    |    79.8   |
-   4    |    98.2     |     98.2    |    76.8   |
-   5    |    97.0     |     97.8    |    72.6   |
+Players | 5 suits | 6 suits | black |
+--------|---------|---------|-------|
+   2    |   94.8  |   90.2  | 67.3  |
+   3    |   98.4  |   98.4  | 79.8  |
+   4    |   98.1  |   98.3  | 76.7  |
+   5    |   96.8  |   97.7  | 72.6  |
+
+The average score tables can be found in the source files themselves.
 
 ## How to write your own AI player
 Use an existing player as a guide.  `CheatingIdiot` is especially simple.

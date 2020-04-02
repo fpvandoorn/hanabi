@@ -3,11 +3,16 @@
 A strategy for 4 or 5 players which uses "hat guessing" to convey information
 to all other players with a single clue. See doc_hat_player.md for a detailed
 description of the strategy. The following table gives the approximate
-percentages of this strategy reaching maximum score (over 10000 games).
-Players | % (no variant) | % (6 suits) | % (rainbow) | % (black) |
---------+----------------+-------------+-------------+-----------|
-   4    |      94.2      |     94.4    |    94.2     |   59.6    |
-   5    |      91.2      |     95.7    |    95.7     |   56.5    |
+percentages of this strategy reaching maximum score (over 10000 games, at seed 0).
+Players | vanilla | 6 suits | rainbow | black |
+--------|---------|---------|---------|-------|
+   4    |   94.1  |   93.9  |  93.7   | 59.6  |
+   5    |   90.8  |   95.1  |  95.1   | 56.5  |
+Average number of points lost (either 25 or 30 minus average score attained):
+Players | vanilla | 6 suits | rainbow | black |
+--------|---------|---------|---------|-------|
+   4    |  0.09   |   0.09  |  0.12   | 0.93  |
+   5    |  0.14   |   0.07  |  0.07   | 0.95  |
 """
 
 from hanabi_classes import *
