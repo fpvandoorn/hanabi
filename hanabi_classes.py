@@ -14,6 +14,7 @@ import random, logging, sys
 
 VANILLA_SUITS = 'rygbw'
 SUIT_CONTENTS = '1112233445' # must be ascending
+MAX_VALUE = 5 # maximum number in SUIT_CONTENTS
 BLACK_SUIT_CONTENTS = '12345' # must be ascending
 N_HINTS       = 8
 N_LIGHTNING   = 3

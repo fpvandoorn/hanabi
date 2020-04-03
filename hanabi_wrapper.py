@@ -130,7 +130,7 @@ for i in range(args.n_rounds):
         args.n_rounds = i
         break
     if args.verbosity in ('verbose', 'log'):
-        logger.info('\n' + 'ROUND {}:'.format(i))
+        logger.info('\n' + 'ROUND {}:'.format(i+1))
     score = play_one_round(args.game_type, players, names, args.verbosity,
                            args.loss_score, args.police, args.output, debug)
     scores.append(score)

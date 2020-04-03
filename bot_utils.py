@@ -5,13 +5,29 @@ will use it, however, then it doesn't belong here."""
 
 from hanabi_classes import *
 
+def number_of_copies(card):
+    """Returns the number of copies that exists of the card"""
+    if card[1] == BLACK_SUIT or card[0] == '5':
+        return 1
+    if card[0] == '1':
+        return 3
+    return 2
+
 def names(cards):
-    """Returns the names of a list of cards"""
+    """Returns the names of a list of cards; call only on visible cards!"""
     return [card['name'] for card in cards]
 
 def get_plays(cards, progress):
     """Return a list of plays (subset of input); call only on visible cards!"""
     return [card for card in cards if is_playable(card, progress)]
+
+def get_usefuls(cards, progress):
+    """Return the cards in `cards` that are not yet played; call only on visible cards!"""
+    return [card for card in cards if not has_been_played(card, progress)]
+
+def get_criticals(cards, r):
+    """Return the cards in `cards` that are critical; call only on visible cards!"""
+    return [card for card in cards if is_critical(card['name'], r)]
 
 def is_cardname_playable(cardName, progress):
     return progress[cardName[1]] + 1 == int(cardName[0])
@@ -143,8 +159,9 @@ def count_unplayed_playable_cards(r, progress):
     unplayable because they are already discarded"""
     n = 0
     for suit in r.suits:
-        for i in range(progress[suit]+1,int(SUIT_CONTENTS[-1])+1):
-            if r.discardpile.count(str(i) + suit) < SUIT_CONTENTS.count(str(i)):
+        for i in range(progress[suit]+1,MAX_VALUE+1):
+            s = str(i) + suit
+            if r.discardpile.count(s) < number_of_copies(s):
                 n += 1
             else:
                 break
@@ -158,12 +175,12 @@ def get_all_useful_cardnames(r):
     """Gets all cards that could be playable in future"""
     l = []
     for suit in r.suits:
-        for i in range(r.progress[suit]+1,int(SUIT_CONTENTS[-1])+1):
+        for i in range(r.progress[suit]+1,MAX_VALUE+1):
             s = str(i) + suit
 
             # If we've already gotten rid of this card
             # then we don't add it or any numbers afterwards
-            if r.discardpile.count(s) == SUIT_CONTENTS.count(str(i)):
+            if r.discardpile.count(s) == number_of_copies(s):
                 break
             l.append(s)
     return l
