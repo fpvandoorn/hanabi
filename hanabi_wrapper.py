@@ -12,7 +12,7 @@ Command-line arguments (see usage):
   loss_score: Whether to award points after a game is lost
 """
 
-import sys, argparse, logging, random, os
+import sys, argparse, logging, random, io, os
 from time import gmtime, strftime
 from math import sqrt
 from play_hanabi import play_one_round, player_end_game_logging, total_cards
@@ -44,6 +44,9 @@ parser.set_defaults(police=False)
 parser.add_argument('-o', '--output',
   dest='output', action='store_true', help='Output a JSON file of the game in log.json')
 parser.set_defaults(output=False)
+parser.add_argument('-c', '--compare',
+  dest='compare', action='store_true', help='Compare scores with another run')
+parser.set_defaults(compare=False)
 
 args = parser.parse_args()
 
@@ -155,6 +158,24 @@ if len(scores) > 1: # Only print stats if there were multiple rounds.
       logger.info('(that is {:.3f} below max score)'.format(max_score - mean(scores)))
     logger.info('PERFECT GAMES: {:.2f}% +/- {:.2f}pp (1 std. err.)'
                 .format(100*perfect_games, 100*std_perfect_games))
+    if args.compare:
+        if os.path.exists('scores.txt'):
+            nrounds_stringlength = len(str(len(scores)))
+            with io.open('scores.txt', 'r', encoding='utf-8') as f:
+                for num, curscore in enumerate(scores, start=1):
+                    next_line = f.readline()
+                    if not next_line:
+                        break
+                    prevscore = int(next_line)
+                    if curscore < prevscore:
+                        logger.info('round {} worsened from {} to {}:'.format(str(num).rjust(nrounds_stringlength), prevscore, curscore))
+                    if curscore > prevscore:
+                        logger.info('round {} improved from {} to {}:'.format(str(num).rjust(nrounds_stringlength), prevscore, curscore))
+        else:
+            with io.open('scores.txt', 'a', encoding='utf-8') as f:
+                for s in scores:
+                    f.write(str(s))
+                    f.write('\n')
 elif args.verbosity == 'silent': # Still print score for silent single round
     logger.info('Score: ' + str(scores[0]))
 
