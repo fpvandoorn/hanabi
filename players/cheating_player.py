@@ -6,18 +6,18 @@ table gives the approximate percentages of this strategy reaching maximum score
 
 Players | 5 suits | 6 suits | black |
 --------|---------|---------|-------|
-   2    |   94.8  |   90.2  | 67.3  |
-   3    |   98.4  |   98.4  | 79.8  |
-   4    |   98.1  |   98.3  | 76.7  |
-   5    |   96.8  |   97.7  | 72.6  |
+   2    |   95.0  |   90.4  | 67.9  |
+   3    |   98.5  |   98.4  | 80.2  |
+   4    |   98.1  |   98.3  | 77.3  |
+   5    |   97.1  |   97.9  | 73.7  |
 
 Average number of points lost (either 25 or 30 minus average score attained):
 Players | 5 suits | 6 suits | black |
 --------|---------|---------|-------|
-   2    |  0.071  |  0.162  | 0.744 |
-   3    |  0.020  |  0.021  | 0.408 |
-   4    |  0.024  |  0.023  | 0.474 |
-   5    |  0.039  |  0.028  | 0.520 |
+   2    |  0.070  |  0.159  | 0.735 |
+   3    |  0.019  |  0.020  | 0.401 |
+   4    |  0.023  |  0.022  | 0.460 |
+   5    |  0.036  |  0.026  | 0.501 |
 
 Possible improvements (probably this doesn't actually increase the win percentage):
 - When playing a card, prefer one that allows other players to follow up in the
@@ -100,11 +100,24 @@ class CheatingPlayer(AIPlayer):
         if playableCards: # Play a card, if possible (lowest value first)
             playableCards.reverse() # play newest cards first
             # If I only have one 5 and all the useful cards are drawn, don't play it yet
-            if endgame > 0 and r.gameOverTimer is None and playableCards[0]['name'][0] == '5' and\
+            # todo: sometimes I even want to discard in this case.
+            if endgame > 0 and r.gameOverTimer is None and all_useful_cards_are_drawn(r) and\
                 r.hints and len([card for card in cards if not has_been_played(card, progress)]) == 1:
-                if all_useful_cards_are_drawn(r):
+                if int(playableCards[0]['name'][0]) == 5:
                     return self.give_a_hint(me, r)
-            #todo: also sometimes stall with a 4
+                # also stall with a 4, if the player with a 5 has another critical card to play
+                if int(playableCards[0]['name'][0]) == 4:
+                    suit = playableCards[0]['name'][1]
+                    players_with_5 = [pl for pl in range(r.nPlayers) if '5' + suit in names(r.h[pl].cards)]
+                    # note: this list can be empty if the 5 is already discarded
+                    if (not players_with_5) or [card for card in r.h[players_with_5[0]].cards if\
+                        is_playable(card, progress) and is_critical(card['name'], r)]:
+                        return self.give_a_hint(me, r)
+
+            # I prefer to play 5s over playable 4s for which I have the 5 in hand
+            if len(playableCards) >= 2 and [card for card in playableCards if card['name'][0] == '5']:
+                playableCards = [card for card in playableCards if not (card['name'][0] == '4' and
+                '5' + card['name'][1] in names(cards))]
 
             # We want to first play the lowest card in our hand, and then a critical card.
             # However, in the last round of the game, we first want to play critical cards (otherwise we definitely lose)
@@ -120,8 +133,9 @@ class CheatingPlayer(AIPlayer):
                 playableCards = find_all_highest(playableCards, lambda card: int(is_critical(card['name'], r)))
                 playableCards = find_all_lowest(playableCards, lambda card: int(card['name'][0]))
             visiblecards = names(get_all_visible_cards(me, r))
+            # prefer to play cards that are not visible in other hands
             playableCards = find_all_lowest(playableCards, lambda card: int(card['name'] in visiblecards))
-            return 'play', find_lowest(playableCards)
+            return 'play', playableCards[0]
 
         if r.hints == 8: # Hint if you are at maximum hints
             return self.give_a_hint(me, r)
@@ -161,6 +175,10 @@ class CheatingPlayer(AIPlayer):
             if r.hints and [card for card in cards if not has_been_played(card, progress)] and\
             not [card for card in r.h[next(me, r)].cards if not has_been_played(card, progress)] and\
             not_waiting_for_low_card and not all_useful_cards_are_drawn(r):
+                return self.give_a_hint(me, r)
+
+            # don't draw the last card by discarding
+            if r.hints and len(r.deck) == 1:
                 return self.give_a_hint(me, r)
 
         # Discard if you can safely discard or if you have no hints.
