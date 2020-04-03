@@ -94,13 +94,16 @@ class CheatingPlayer(AIPlayer):
 
         playableCards = get_plays(cards, progress)
 
+        badness, my_discard = self.want_to_discard(cards, me, r, progress)
         # if r.gameOverTimer == 0 and sum(progress.values()) + int(bool(playableCards)) < len(r.suits) * 5:
         #     r.debug['stop'] = 0
 
-        if playableCards: # Play a card, if possible (lowest value first)
+        # todo: if there are 0/1 hints and another player has only critical (or very useful) cards, consider discarding.
+
+        if playableCards: # If I have a playable card, almost always play this card.
             playableCards.reverse() # play newest cards first
             # If I only have one 5 and all the useful cards are drawn, don't play it yet
-            # todo: sometimes I even want to discard in this case.
+            # todo: in rare cases I might even need to discard in this case.
             if endgame > 0 and r.gameOverTimer is None and all_useful_cards_are_drawn(r) and\
                 r.hints and len([card for card in cards if not has_been_played(card, progress)]) == 1:
                 if int(playableCards[0]['name'][0]) == 5:
@@ -119,13 +122,14 @@ class CheatingPlayer(AIPlayer):
                 playableCards = [card for card in playableCards if not (card['name'][0] == '4' and
                 '5' + card['name'][1] in names(cards))]
 
-            # We want to first play the lowest card in our hand, and then a critical card.
-            # However, in the last round of the game, we first want to play critical cards (otherwise we definitely lose)
-            # In the penultimate round of the game, we want to play critical cards if we have at least 2.
-            # We use a sloppy way of checking whether this is the penultimate round,
-            # by checking if the deck is smaller than the number of players with a playable card.
+            # We want to first play the lowest card in our hand, and when tied, play a critical card.
+            # There are two exceptions:
+              # In the last round of the game, we always want to play critical cards first (otherwise we definitely lose)
+              # In the penultimate round of the game, if we have at least two critical cards, we want to play one of those.
+                # We use a sloppy way of checking whether this is the penultimate round,
+                # by checking if the deck is smaller than the number of players with a playable card.
             if r.gameOverTimer is None and\
-            not (len(r.deck) <= len([i for i in range(r.nPlayers) if get_plays(r.h[i].cards, progress)]) and\
+            not (len(r.deck) <= len([pl for pl in range(r.nPlayers) if get_plays(r.h[pl].cards, progress)]) and\
                 len([card for card in cards if is_critical(card['name'], r)]) >= 2):
                 playableCards = find_all_lowest(playableCards, lambda card: int(card['name'][0]))
                 playableCards = find_all_highest(playableCards, lambda card: int(is_critical(card['name'], r)))
@@ -140,20 +144,37 @@ class CheatingPlayer(AIPlayer):
         if r.hints == 8: # Hint if you are at maximum hints
             return self.give_a_hint(me, r)
 
+        if not r.hints: # Discard at 0 hints.
+            return 'discard', my_discard
+
         if endgame > 0:
+            # don't draw the last card by discarding too early
+            if len(r.deck) == 1:
+                return self.give_a_hint(me, r)
+
+            # hint if the next player has no useful card, but I do, and could draw another one
+            if [card for card in cards if not has_been_played(card, progress)] and\
+              not [card for card in r.h[next(me, r)].cards if not has_been_played(card, progress)] and\
+              not all_useful_cards_are_drawn(r):
+                return self.give_a_hint(me, r)
+
+            # todo: in 5 (and 4?) player games, if only 1 card can be played in the next round, discard under some conditions (necessary: len(deck) >= 2)
+            # even better: count ahead, and if you know someone has to discard at some point, prefer to discard now.
+
             # hint if someone can play, unless you are waiting for a low card still to be drawn
             useful = get_all_useful_cardnames(r)
             undrawn = [int(name[0]) for name in useful if name not in names(get_all_cards(r))]
-            # returns False if we are still waiting for a low card,
-            # in which case players should discard a more aggressively
-            # This seems to be good in 5 players (compared over 10000 games in vanilla/rainbow on seeds 0-3)
-            not_waiting_for_low_card = (not undrawn or endgame >= r.nPlayers - min(undrawn)) or r.nPlayers != 5
-            if not_waiting_for_low_card :
+            # In 5 player games, we might want to discard more aggressively if we are still waiting for a low card
+            # (compared over 10000 games in vanilla/rainbow on seeds 0-3)
+            waiting_for_low_card = r.nPlayers == 5 and undrawn and endgame < r.nPlayers - min(undrawn)
+            if not waiting_for_low_card:
                 for i in other_players(me, r)[0:r.hints]:
                     if get_plays(r.h[i].cards, progress):
                         return self.give_a_hint(me, r)
 
-            # if we are waiting for a 3, let the player with the 5 draw it
+
+            # if we are waiting for a 3, then the player with the 4 cannot discard.
+            # The fact that we reach this code means that there are no playable cards (or there are few clues)
             if r.hints >= r.nPlayers - 1 and len(r.deck) == 2:
                 suits = [suit for suit in r.suits if r.progress[suit] == 2]
                 if suits:
@@ -162,29 +183,18 @@ class CheatingPlayer(AIPlayer):
                     players_with_5 = [i for i in range(r.nPlayers) if '5' + suit in names(r.h[i].cards)]
                     players_with_4 = [i for i in range(r.nPlayers) if '4' + suit in names(r.h[i].cards)]
                     # if the 5 is not yet drawn, then anybody can discard, as long as they are not the only one with the 4.
-                    # But this will go correctly because of the remaining logic in this file
                     if players_with_5:
-                        player = players_with_5[0]
-                        if [pl for pl in players_with_4 if is_between(me, player, pl)] and\
-                            (me != player or sum(progress.values()) == 27):
+                        player_with_5 = players_with_5[0]
+                        if [pl for pl in players_with_4 if is_between(me, player_with_5, pl)] and\
+                            (me != player_with_5 or sum(progress.values()) == 27):
                             return 'discard', self.want_to_discard(cards, me, r, progress)[1]
                         else:
                             return self.give_a_hint(me, r)
 
-            # hint if the next player has no useful card, but I do, and could draw another one
-            if r.hints and [card for card in cards if not has_been_played(card, progress)] and\
-            not [card for card in r.h[next(me, r)].cards if not has_been_played(card, progress)] and\
-            not_waiting_for_low_card and not all_useful_cards_are_drawn(r):
-                return self.give_a_hint(me, r)
-
-            # don't draw the last card by discarding
-            if r.hints and len(r.deck) == 1:
-                return self.give_a_hint(me, r)
-
         # Discard if you can safely discard or if you have no hints.
-        badness, discard = self.want_to_discard(cards, me, r, progress)
+
         if r.hints + badness < 10 or r.hints == 0:
-            return 'discard', discard
+            return 'discard', my_discard
         other_badness = []
         for i in other_players(me, r)[0:r.hints]:
             if get_plays(r.h[i].cards, progress):
@@ -197,5 +207,5 @@ class CheatingPlayer(AIPlayer):
         #
         if min(other_badness) < badness:
             return self.give_a_hint(me, r)
-        # discard the highest critical card
-        return 'discard', discard
+        # discard the highest useful card
+        return 'discard', my_discard

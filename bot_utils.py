@@ -236,9 +236,9 @@ def is_subset(l1, l2):
     return True
 
 def is_between(x, begin, end):
-    """Returns whether x is (in turn order) between begin (inclusive) and end
-    (exclusive). This function assumes that x,
-    begin, end are smaller than the number of players (and at least 0).
+    """Returns whether `x` is (in turn order) between `begin` (inclusive) and `end`
+    (exclusive). This function assumes that `x`,
+    `begin`, `end` are smaller than the number of players (and at least 0).
     If begin == end, this is false."""
     return begin <= x < end or end < begin <= x or x < end < begin
 
