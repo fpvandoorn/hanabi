@@ -6,18 +6,23 @@ table gives the approximate percentages of this strategy reaching maximum score
 
 Players | 5 suits | 6 suits | black |
 --------|---------|---------|-------|
-   2    |   95.1  |   90.4  | 67.9  |
-   3    |   98.6  |   98.3  | 80.1  |
-   4    |   98.3  |   98.3  | 77.4  |
-   5    |   97.1  |   98.2  | 74.6  |
+   2    |   95.1  |   90.6  | 66.2  |
+   3    |   98.7  |   98.4  | 80.2  |
+   4    |   98.3  |   98.4  | 77.4  |
+   5    |   97.1  |   98.2  | 74.5  |
 
 Average number of points lost (either 25 or 30 minus average score attained):
 Players | 5 suits | 6 suits | black |
 --------|---------|---------|-------|
-   2    |  0.067  |  0.157  | 0.725 |
-   3    |  0.016  |  0.020  | 0.393 |
-   4    |  0.022  |  0.022  | 0.450 |
-   5    |  0.035  |  0.022  | 0.480 |
+   2    |  0.067  |  0.154  | 0.721 |
+   3    |  0.015  |  0.018  | 0.390 |
+   4    |  0.021  |  0.021  | 0.447 |
+   5    |  0.035  |  0.022  | 0.483 |
+
+Disclaimer: I try to not optimize the winrate for this seed specifically,
+but as far as I can I optimize only other seeds. This is to avoid that seed 0 is artificially higher
+because some of the heuristics in this file happen to work better for seed 0. That said, it is
+possible that there is a little artificial increase of the seed 0 scores.
 
 Possible improvements (probably this doesn't actually increase the win percentage):
 - When playing a card, prefer one that allows other players to follow up in the
