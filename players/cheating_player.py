@@ -24,14 +24,21 @@ but as far as I can I optimize only other seeds. This is to avoid that seed 0 is
 because some of the heuristics in this file happen to work better for seed 0. That said, it is
 possible that there is a little artificial increase of the seed 0 scores.
 
-Possible improvements (probably this doesn't actually increase the win percentage):
-- When playing a card, prefer one that allows other players to follow up in the
-  same suit
+Possible Improvements:
+- When playing a card when the deck has at most 1 card, play into a player's hand that has 0 playables, but at least 1 useful card. [2p black?, seed 100?, game 6?]
+- If all useful cards are drawn, except one or more nx (card with rank n, suit x) with n <= 3. Then the player with the (n+1)x is not allowed to discard or play non-critical cards. [2p black, seed 107, game 2]
+
+
+Possible Heuristic improvements (probably this doesn't actually increase the win percentage):
+- If I have all copies of one card in my hand, count this as 1 critical card in my hand.
+- When playing a card, prefer one that makes other visible cards playable
 - When discarding a card you see in someone else's hand: don't do this if the
-  other player has a lot of playable cards
-- When discarding the first copy of a card, prefer suits with low progress
+  other player has a lot of useful/critical cards
+- When discarding a useful card, prefer suits with low progress? Or maybe prefer discarding 4s where we already have the 3? or the ones where we don't have the 3?
 - If I can play, but someone else has the same card, and they don't have a critical 4
-  (or 5 above it), let them play it
+  (or 5 above it), and I do, let them play it
+- In 2 player games, when you early on have 9 critical cards across both hands, is it sometimes worth it to discard a (black?) 5 instead of a non-critical 2?
+- If most cards are played, keep better track of who discards to draw the remaining cards of the suits where a 1-3 is still missing. [2p black, seed 117, game 5]
 
 To appreciate the difficulty in writing a good cheating player, the following statements are all FALSE:
 - if you have a playable card, you always want to play a card
@@ -84,6 +91,7 @@ class CheatingPlayer(AIPlayer):
         (depends on the number of players)
         badness between 40 and 60: discard the first copy of a non-5 card
         (4s are badness 40, 3s badness 50, 2s badness 60)
+        badness 90: black 5
         badness >= 100: discard a necessary card
         Add 6 badness if I have a critical 4 or a 5 above a critical 4 in 2 player games."""
 
@@ -109,6 +117,9 @@ class CheatingPlayer(AIPlayer):
             card = find_highest(discardCards)
             return 80 - 10 * int(card['name'][0]) + base_badness, card
         cards_copy = list(cards)
+        discardCards = [card for card in cards if card['name'] == '5k']
+        if discardCards:
+            return 90, discardCards[0]
         card = find_highest(cards_copy) # discard a critical card
         return 600 - 100 * int(card['name'][0]), card
 
@@ -143,20 +154,20 @@ class CheatingPlayer(AIPlayer):
         badness, my_discard = self.want_to_discard(cards, me, r)
 
         # stop if we can (probably) improve the score of this game (for debugging)
-        # if r.gameOverTimer == 0 and sum(progress.values()) + int(bool(playableCards)) < len(r.suits) * 5:
-        #     if cards[-1]['name'][1] != BLACK_SUIT or sum(progress.values()) + 6 - int(cards[-1]['name'][0]) < len(r.suits) * 5:
-        #         r.debug['stop'] = 0
+        if r.gameOverTimer == 0 and sum(progress.values()) + int(bool(playableCards)) < len(r.suits) * 5:
+            if cards[-1]['name'][1] != BLACK_SUIT or sum(progress.values()) + 6 - int(cards[-1]['name'][0]) < len(r.suits) * 5:
+                r.debug['stop'] = 0
 
         # todo: if there are 0/1 hints and another player has only critical (or very useful) cards, consider discarding.
 
         if playableCards: # If I have a playable card, almost always play this card.
             playableCards.reverse() # play newest cards first
             # sometimes I don't want to play in the endgame
+            # todo: if the next player has only critical cards, and there are 0 hints I might need to discard. [2p black, seed 114, game 7] [2p black, seed 115, game 12]
             if endgame > 0 and r.gameOverTimer is None and r.hints:
                 # If I only have one 5 and all the useful cards are drawn, don't play it yet.
                 # In 2-player games the other player need to have at least one playable card
-                # in *very* rare cases I might even need to discard in this case (not implemented).
-                # todo: if pace <= 0, do not count 2+ away cards as my useful cards to decide here
+                # todo: if pace <= 0, do not count 2+ away cards as my useful cards to decide here [2p black, seed 108, game 7]
                 if (len(usefulCards) == 1 or False) and (a_copy_of_all_useful_cards_is_drawn(r) or (r.nPlayers == 2 and get_plays(r.h[next(me, r)].cards, progress))):
                     if int(playableCards[0]['name'][0]) == 5:
                         return self.give_a_hint(me, r)
@@ -304,7 +315,7 @@ class CheatingPlayer(AIPlayer):
         # If someone can play or discard more safely before you run out of
         # hints, give a hint.
 
-        if min(other_badness)< badness:
+        if min(other_badness) < badness:
             # print(names(cards),' ',badness, ' ', other_badness, ' ', r.turnNumber)
             return self.give_a_hint(me, r)
 
