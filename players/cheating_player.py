@@ -6,7 +6,7 @@ table gives the approximate percentages of this strategy reaching maximum score
 
 Players | 5 suits | 6 suits | black |
 --------|---------|---------|-------|
-   2    |   94.7  |   89.7  | 67.1  |
+   2    |   95.1  |   90.4  | 67.9  |
    3    |   98.6  |   98.3  | 80.1  |
    4    |   98.3  |   98.3  | 77.4  |
    5    |   97.1  |   98.2  | 74.6  |
@@ -14,12 +14,10 @@ Players | 5 suits | 6 suits | black |
 Average number of points lost (either 25 or 30 minus average score attained):
 Players | 5 suits | 6 suits | black |
 --------|---------|---------|-------|
-   2    |  0.072  |  0.169  | 0.743 |
+   2    |  0.067  |  0.157  | 0.725 |
    3    |  0.016  |  0.020  | 0.393 |
    4    |  0.022  |  0.022  | 0.450 |
    5    |  0.035  |  0.022  | 0.480 |
-
-To do: revert 2p back to commit fa72527, where it did better (95/90.4/67.9)
 
 Possible improvements (probably this doesn't actually increase the win percentage):
 - When playing a card, prefer one that allows other players to follow up in the
