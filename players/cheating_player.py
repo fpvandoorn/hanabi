@@ -6,18 +6,20 @@ table gives the approximate percentages of this strategy reaching maximum score
 
 Players | 5 suits | 6 suits | black |
 --------|---------|---------|-------|
-   2    |   95.0  |   90.4  | 67.9  |
-   3    |   98.5  |   98.4  | 80.2  |
-   4    |   98.1  |   98.3  | 77.3  |
-   5    |   97.1  |   97.9  | 73.7  |
+   2    |   94.7  |   89.7  | 67.1  |
+   3    |   98.6  |   98.3  | 80.1  |
+   4    |   98.3  |   98.3  | 77.4  |
+   5    |   97.1  |   98.2  | 74.6  |
 
 Average number of points lost (either 25 or 30 minus average score attained):
 Players | 5 suits | 6 suits | black |
 --------|---------|---------|-------|
-   2    |  0.070  |  0.159  | 0.735 |
-   3    |  0.019  |  0.020  | 0.401 |
-   4    |  0.023  |  0.022  | 0.460 |
-   5    |  0.036  |  0.026  | 0.501 |
+   2    |  0.072  |  0.169  | 0.743 |
+   3    |  0.016  |  0.020  | 0.393 |
+   4    |  0.022  |  0.022  | 0.450 |
+   5    |  0.035  |  0.022  | 0.480 |
+
+To do: revert 2p back to commit fa72527, where it did better (95/90.4/67.9)
 
 Possible improvements (probably this doesn't actually increase the win percentage):
 - When playing a card, prefer one that allows other players to follow up in the
@@ -135,7 +137,7 @@ class CheatingPlayer(AIPlayer):
             if endgame > 0 and r.gameOverTimer is None and r.hints:
                 # If I only have one 5 and all the useful cards are drawn, don't play it yet.
                 # in *very* rare cases I might even need to discard in this case (not implemented).
-                if len(usefulCards) == 1 and all_useful_cards_are_drawn(r):
+                if len(usefulCards) == 1 and a_copy_of_all_useful_cards_is_drawn(r):
                     if int(playableCards[0]['name'][0]) == 5:
                         return self.give_a_hint(me, r)
                     # also stall with a 4, if the player with a 5 has another critical card to play
@@ -199,17 +201,13 @@ class CheatingPlayer(AIPlayer):
 
         # if there are only 2 cards in the deck and we are waiting for a 3 (or lower), then the player with the one away card (4 or lower) cannot discard.
         if len(r.deck) == 2 and r.hints >= r.nPlayers - 1:
-            suits = [suit for suit in r.suits if r.progress[suit] <= 2 and str(r.progress[suit] + 1) + suit not in get_all_cards(r)]
+            suits = [suit for suit in r.suits if r.progress[suit] <= 2 and str(r.progress[suit] + 1) + suit not in names(get_all_cards(r))]
             if len(suits) == 1:
                 suit = suits[0]
                 next_value = r.progress[suit] + 1
                 players_with_two_away = [pl for pl in range(r.nPlayers) if str(next_value + 2) + suit in names(r.h[pl].cards)]
                 players_with_one_away = [pl for pl in range(r.nPlayers) if str(next_value + 1) + suit in names(r.h[pl].cards)]
-                # if players_with_one_away: # this doesn't work, there could be more than one player with a one-away card
-                #     if players_with_one_away[0] == me:
-                #         return self.give_a_hint(me, r)
-                #     if players_with_one_away[0] == next(me, r) or r.hints == r.nPlayers - 1:
-                #         return 'discard', my_discard
+                # note to self: there could be more than one player with a one-away card, which makes it hard to base the decision on those cards.
                 # If the 2-away card is not yet drawn, then anybody can discard, as long as they are not the only one with the one away card.
                 if not players_with_two_away and [pl for pl in players_with_one_away if pl != me] and\
                     sum(progress.values()) == (len(r.suits) - 1) * 5 + r.progress[suit]:
@@ -222,17 +220,10 @@ class CheatingPlayer(AIPlayer):
                     else:
                         return self.give_a_hint(me, r)
 
-                # if players_with_two_away:
-                #     player_with_two_away = players_with_two_away[0]
-                #     if [pl for pl in players_with_one_away if is_between(me, player_with_two_away, pl)] and\
-                #         (me != player_with_two_away or sum(progress.values()) == 27):
-                #         return 'discard', my_discard
-                #     else:
-                #         return self.give_a_hint(me, r)
-
         # hint if the next player has no useful card, but I do, and could draw another one, and there are enough clues
+        # also hint if I have 2 more critical cards than the next player
         if r.hints >= 8 - len(usefulCards) and not all_useful_cards_are_drawn(r) and\
-          not get_usefuls(r.h[next(me, r)].cards, progress):
+          (not get_usefuls(r.h[next(me, r)].cards, progress) or len(get_criticals(r.h[next(me, r)].cards, r)) + 1 < len(get_criticals(cards, r))):
             return self.give_a_hint(me, r)
 
         if endgame > 0:
@@ -247,8 +238,25 @@ class CheatingPlayer(AIPlayer):
             useful = get_all_useful_cardnames(r)
             undrawn = [int(name[0]) for name in useful if name not in names(get_all_cards(r))]
 
-            # if there is only 1 player with a playable card, prefer to discard
+            # ?? if there is only 1 player with a playable card, prefer to discard ??
             want_to_discard = False #allowable_discards and len([pl for pl in range(r.nPlayers) if get_plays(r.h[pl].cards, progress)]) == 1
+            # I want to discard if my hand is useless and someone without a playable has to discard this round, except if it triggers the endgame earlier.
+            want_to_discard = not usefulCards and r.hints <= len([pl for pl in range(r.nPlayers) if not get_usefuls(r.h[pl].cards, progress)])
+            if want_to_discard:
+                temphints = r.hints - 1
+                tempdeck = len(r.deck) - 1
+                for pl in other_players(me, r):
+                    tempplayables = get_plays(r.h[pl].cards, progress) # todo: ideally we check whether the card is playable on *their* turn
+                    if tempplayables:
+                        tempdeck -= 1
+                    if [card for card in tempplayables if card['name'][0] == '5']:
+                        temphints += 1
+                    if not tempplayables:
+                        temphints -= 1
+                    if temphints < 0:
+                        break
+                if tempdeck <= 0 or temphints > 0:
+                    want_to_discard = False
 
             # In 5 player games, we might want to discard more aggressively if we are still waiting for a low card
             # (compared over 10000 games in vanilla/rainbow on seeds 0-3)
