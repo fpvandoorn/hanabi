@@ -168,14 +168,15 @@ if len(scores) > 1: # Only print stats if there were multiple rounds.
                         break
                     prevscore = int(next_line)
                     if curscore < prevscore:
-                        logger.info('round {} worsened from {} to {}:'.format(str(num).rjust(nrounds_stringlength), prevscore, curscore))
+                        logger.info('round {} worsened from {} to {}.'.format(str(num).rjust(nrounds_stringlength), prevscore, curscore))
                     if curscore > prevscore:
-                        logger.info('round {} improved from {} to {}:'.format(str(num).rjust(nrounds_stringlength), prevscore, curscore))
+                        logger.info('round {} improved from {} to {}.'.format(str(num).rjust(nrounds_stringlength), prevscore, curscore))
         else:
             with io.open('scores.txt', 'a', encoding='utf-8') as f:
                 for s in scores:
                     f.write(str(s))
                     f.write('\n')
+            logger.info('scores written to scores.txt')
 elif args.verbosity == 'silent': # Still print score for silent single round
     logger.info('Score: ' + str(scores[0]))
 

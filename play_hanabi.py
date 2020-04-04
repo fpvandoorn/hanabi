@@ -67,7 +67,7 @@ def play_one_round(gameType, players, names, verbosity, lossScore, isPoliced, wr
         output = { "actions": actions, "deck": startDeck, "notes": notes, "players": players, "variant": variant }
         with io.open('log.json', 'a', encoding='utf-8') as f:
             f.write(json.dumps(output, ensure_ascii=False))
-            f.write('\n\n')
+            f.write('\n')
         for i in range(len(players)):
             for c in range(total_cards(gameType)):
                 debug[('note', i, c)] = ''
