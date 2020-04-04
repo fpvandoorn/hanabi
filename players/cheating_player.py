@@ -71,14 +71,14 @@ class CheatingPlayer(AIPlayer):
         target = next(me,r)
         return 'hint', (target, r.h[target].cards[-1]['name'][0])
 
-    def want_to_discard(self, cards, player, r, progress):
+    def want_to_discard(self, cards, player, r):
         """Returns a pair (badness, card) where badness indicates how bad it is
         to discard one of the cards for player and card is the least bad option.
         badness = 1: discard useless card
         badness = 3-6: discard card which is already in some else's hand
         (depends on the number of players)
-        badness between 20 and 40: discard the first copy of a non-5 card
-        (4s are badness 20, 3s badness 30, 2s badness 40)
+        badness between 40 and 60: discard the first copy of a non-5 card
+        (4s are badness 40, 3s badness 50, 2s badness 60)
         badness >= 100: discard a necessary card
         Add 6 badness if I have a critical 4 or a 5 above a critical 4 in 2 player games."""
 
@@ -89,7 +89,7 @@ class CheatingPlayer(AIPlayer):
             if critical_fours and [card for card in cards if card['name'][1] in critical_fours and 4 <= int(card['name'][0]) <= 5]:
                 base_badness = 6
 
-        discardCards = get_played_cards(cards, progress)
+        discardCards = get_played_cards(cards, r.progress)
         if discardCards: # discard a card which is already played
             return 1 + base_badness, discardCards[0]
         discardCards = get_duplicate_cards(cards)
@@ -102,7 +102,7 @@ class CheatingPlayer(AIPlayer):
         discardCards = [card for card in cards if not is_critical(card['name'], r)]
         if discardCards: # discard a card which is not unsafe to discard
             card = find_highest(discardCards)
-            return 60 - 10 * int(card['name'][0]) + base_badness, card
+            return 80 - 10 * int(card['name'][0]) + base_badness, card
         cards_copy = list(cards)
         card = find_highest(cards_copy) # discard a critical card
         return 600 - 100 * int(card['name'][0]), card
@@ -114,13 +114,28 @@ class CheatingPlayer(AIPlayer):
 
         # determine whether the game is in the endgame
         # (this can cause the player to clue instead of discard)
+        # the number of cards that still need to be played, minus the deck size. This is the minimum
+        # number of cards that (still) need to be played after the last card is drawn to achieve a maximum score.
         endgame = count_unplayed_playable_cards(r, progress) - len(r.deck)
-        # number of allowed discards
-        allowable_discards = len([pl for pl in range(r.nPlayers) if get_usefuls(r.h[pl].cards, progress)]) - endgame
+        # The number of discards that are still safe. This number decreases by one every time someone discards,
+        # except if that player had 0 useful cards, and drew one. If this number gets below 0, the maximum score is impossible.
+        modified_pace = len([pl for pl in range(r.nPlayers) if get_usefuls(r.h[pl].cards, progress)]) - endgame
+        # allowable_discards = len([pl for pl in range(r.nPlayers) if get_usefuls(r.h[pl].cards, progress)]) - endgame
 
-        playableCards = get_plays(cards, progress)
-        usefulCards = get_usefuls(cards, progress)
-        badness, my_discard = self.want_to_discard(cards, me, r, progress)
+        # The playable cards and useful cards in my hand, with duplicates removed
+        playableCardsTemp = get_plays(cards, progress)
+        playableCards = []
+        for c in playableCardsTemp:
+            if c['name'] not in names(playableCards):
+                playableCards.append(c)
+        usefulCardsTemp = get_usefuls(cards, progress)
+        usefulCards = []
+        for c in usefulCardsTemp:
+            if c['name'] not in names(usefulCards):
+                usefulCards.append(c)
+        criticalCards = get_criticals(cards, r)
+
+        badness, my_discard = self.want_to_discard(cards, me, r)
 
         # stop if we can (probably) improve the score of this game (for debugging)
         # if r.gameOverTimer == 0 and sum(progress.values()) + int(bool(playableCards)) < len(r.suits) * 5:
@@ -134,8 +149,10 @@ class CheatingPlayer(AIPlayer):
             # sometimes I don't want to play in the endgame
             if endgame > 0 and r.gameOverTimer is None and r.hints:
                 # If I only have one 5 and all the useful cards are drawn, don't play it yet.
+                # In 2-player games the other player need to have at least one playable card
                 # in *very* rare cases I might even need to discard in this case (not implemented).
-                if len(usefulCards) == 1 and a_copy_of_all_useful_cards_is_drawn(r):
+                # todo: if pace <= 0, do not count 2+ away cards as my useful cards to decide here
+                if (len(usefulCards) == 1 or False) and (a_copy_of_all_useful_cards_is_drawn(r) or (r.nPlayers == 2 and get_plays(r.h[next(me, r)].cards, progress))):
                     if int(playableCards[0]['name'][0]) == 5:
                         return self.give_a_hint(me, r)
                     # also stall with a 4, if the player with a 5 has another critical card to play
@@ -180,7 +197,7 @@ class CheatingPlayer(AIPlayer):
                 # by checking if the deck is smaller than the number of players with a playable card.
             if r.gameOverTimer is None and\
             not (len(r.deck) <= len([pl for pl in range(r.nPlayers) if get_plays(r.h[pl].cards, progress)]) and\
-                len(get_criticals(cards, r)) >= 2):
+                len(criticalCards) >= 2):
                 playableCards = find_all_lowest(playableCards, lambda card: int(card['name'][0]))
                 playableCards = find_all_highest(playableCards, lambda card: int(is_critical(card['name'], r)))
             else:
@@ -213,15 +230,18 @@ class CheatingPlayer(AIPlayer):
                 if len(players_with_two_away) == 1:
                     player_with_two_away = players_with_two_away[0]
                     if [pl for pl in players_with_one_away if is_between(me, player_with_two_away, pl)] and\
-                        (me != player_with_two_away or sum(progress.values()) == (len(r.suits) - 1) * 5 + r.progress[suit]):
+                        (me != player_with_two_away or sum(progress.values()) == (len(r.suits) - 1) * 5 + r.progress[suit] or\
+                        not get_plays(get_all_cards(r), progress)):
                         return 'discard', my_discard
                     else:
                         return self.give_a_hint(me, r)
 
         # hint if the next player has no useful card, but I do, and could draw another one, and there are enough clues
-        # also hint if I have 2 more critical cards than the next player
-        if r.hints >= 8 - len(usefulCards) and not all_useful_cards_are_drawn(r) and\
-          (not get_usefuls(r.h[next(me, r)].cards, progress) or len(get_criticals(r.h[next(me, r)].cards, r)) + 1 < len(get_criticals(cards, r))):
+        # also hint if I have 2 more critical cards than the next player, and they have a useless card
+        # this rule is ignored if the maximum score is already impossible
+        if r.hints >= 8 - len(usefulCards) and not all_useful_cards_are_drawn(r) and modified_pace >= 0 and\
+          (not get_usefuls(r.h[next(me, r)].cards, progress) or len(get_criticals(r.h[next(me, r)].cards, r)) + 1 < len(criticalCards))\
+          and [card for card in r.h[next(me, r)].cards if has_been_played(card, progress)]:
             return self.give_a_hint(me, r)
 
         if endgame > 0:
@@ -260,25 +280,28 @@ class CheatingPlayer(AIPlayer):
             # (compared over 10000 games in vanilla/rainbow on seeds 0-3)
             waiting_for_low_card = r.nPlayers == 5 and undrawn and endgame < r.nPlayers - min(undrawn)
             if not waiting_for_low_card and not want_to_discard:
-                for i in other_players(me, r)[0:r.hints]:
-                    if get_plays(r.h[i].cards, progress):
+                for pl in other_players(me, r)[0:r.hints]:
+                    if get_plays(r.h[pl].cards, progress):
                         return self.give_a_hint(me, r)
 
-        # Discard if you can safely discard or if you have no hints.
+        # Discard if you can safely discard.
 
-        if r.hints + badness < 10 or r.hints == 0:
+        if r.hints + badness < 10:
             return 'discard', my_discard
         other_badness = []
-        for i in other_players(me, r)[0:r.hints]:
-            if get_plays(r.h[i].cards, progress):
+        for pl in other_players(me, r)[0:r.hints]:
+            if get_plays(r.h[pl].cards, progress):
                 other_badness.append(0)
             else:
-                other_badness.append(self.want_to_discard(r.h[i].cards, i, r, progress)[0])
+                other_badness.append(self.want_to_discard(r.h[pl].cards, pl, r)[0] +\
+                  min(9, max(0, 7 * (len(get_criticals(r.h[pl].cards, r)) - len(criticalCards)))))
 
         # If someone can play or discard more safely before you run out of
         # hints, give a hint.
-        #
-        if min(other_badness) < badness:
+
+        if min(other_badness)< badness:
+            # print(names(cards),' ',badness, ' ', other_badness, ' ', r.turnNumber)
             return self.give_a_hint(me, r)
+
         # discard the highest useful card
         return 'discard', my_discard
