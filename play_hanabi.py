@@ -30,10 +30,10 @@ def total_cards(gameType):
     """Number of cards in the deck."""
     return 55 if gameType == 'black' else 10 * (5 if gameType == 'vanilla' else 6)
 
-def play_one_round(gameType, players, names, verbosity, lossScore, isPoliced, writeOutput, debug):
+def play_one_round(gameType, players, names, verbosity, lossScore, emptyClues, isPoliced, writeOutput, debug):
     """Play a full round and return the score (int)."""
 
-    r = Round(gameType, players, names, verbosity, isPoliced, debug) # Instance of a single Hanabi round
+    r = Round(gameType, players, names, verbosity, emptyClues, isPoliced, debug) # Instance of a single Hanabi round
     r.generate_deck_and_deal_hands()
 
     while r.gameOverTimer != 0:

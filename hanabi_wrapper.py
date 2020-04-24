@@ -47,6 +47,9 @@ parser.set_defaults(output=False)
 parser.add_argument('-c', '--compare',
   dest='compare', action='store_true', help='Compare scores with another run')
 parser.set_defaults(compare=False)
+parser.add_argument('-e', '--noempty',
+  dest='noempty', action='store_true', help='Do not allow empty clues (clues that touch no cards)')
+parser.set_defaults(noempty=False)
 
 args = parser.parse_args()
 
@@ -135,7 +138,7 @@ for i in range(args.n_rounds):
     if args.verbosity in ('verbose', 'log'):
         logger.info('\n' + 'ROUND {}:'.format(i+1))
     score = play_one_round(args.game_type, players, names, args.verbosity,
-                           args.loss_score, args.police, args.output, debug)
+                           args.loss_score, not args.noempty, args.police, args.output, debug)
     scores.append(score)
     if args.verbosity != 'silent':
         logger.info('Score: ' + str(score))

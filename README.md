@@ -80,10 +80,10 @@ The cheating player can look at their own hand and play cards without needing cl
 
 Players | 5 suits | 6 suits | black |
 --------|---------|---------|-------|
-   2    |   94.8  |   90.2  | 67.3  |
-   3    |   98.4  |   98.4  | 79.8  |
-   4    |   98.1  |   98.3  | 76.7  |
-   5    |   96.8  |   97.7  | 72.6  |
+   2    |   95.1  |   90.6  | 66.2  |
+   3    |   98.7  |   98.4  | 80.2  |
+   4    |   98.3  |   98.4  | 77.4  |
+   5    |   97.1  |   98.2  | 74.5  |
 
 The average score tables can be found in the source files themselves.
 

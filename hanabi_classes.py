@@ -72,7 +72,7 @@ class Round(object):
     discardpile: list of (names of) cards which are discarded
     """
 
-    def __init__(self, gameType, players, names, verbosity, isPoliced, debug):
+    def __init__(self, gameType, players, names, verbosity, emptyClues, isPoliced, debug):
         """Instantiate a Round and its Hand sub-objects."""
         self.gameType  = gameType
         self.suits = VANILLA_SUITS
@@ -102,6 +102,7 @@ class Round(object):
         self.zazz = ['[HANDS]', '[PLAYS]']
         self.isPoliced = isPoliced
         self.debug = debug
+        self.allow_empty_clues = emptyClues
 
         self.logger = logging.getLogger('game_log')
 
@@ -199,16 +200,20 @@ class Round(object):
             targetPlayer, info = playValue
             assert targetPlayer != self.whoseTurn # Cannot hint self.
             assert info in self.suits or info in SUIT_CONTENTS
-            assert info != '?'
+            assert info != RAINBOW_SUIT
             targetHand = self.h[targetPlayer]
+            empty_clue = True
             for card in targetHand.cards:
                 suit = card['name'][1]
-                if suit == '?' and info in VANILLA_SUITS:
+                if suit == RAINBOW_SUIT and info in VANILLA_SUITS:
                     card['direct'].append(info) # Rainbows match any color.
+                    empty_clue = False
                 elif info in card['name']:
                     card['direct'].append(info) # Card matches hint.
+                    empty_clue = False
                 else:
                     card['indirect'].append(info) # Card does not match hint.
+            assert not empty_clue or self.allow_empty_clues
             self.hints -= 1
             desc = '{} to {}'.format(info, self.h[targetPlayer].name)
 

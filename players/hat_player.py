@@ -13,6 +13,7 @@ Players | vanilla | 6 suits | rainbow | black |
 --------|---------|---------|---------|-------|
    4    |  0.09   |   0.09  |  0.12   | 0.93  |
    5    |  0.14   |   0.07  |  0.07   | 0.95  |
+This player never looks at which cards are clued in their hand, except for the purposes of extracting what the "clue value" (0-8) was.
 """
 
 from hanabi_classes import *
